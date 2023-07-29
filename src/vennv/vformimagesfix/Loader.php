@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace vennv\vformimagesfix;
 
 use pocketmine\entity\Attribute;
+use pocketmine\network\mcpe\NetworkSession;
 use pocketmine\plugin\PluginBase;
 use pocketmine\event\Listener;
 use pocketmine\event\server\DataPacketSendEvent;
@@ -47,50 +48,52 @@ final class Loader extends PluginBase implements Listener
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function onDataPacketSend(DataPacketSendEvent $event): void
     {
         $packets = $event->getPackets();
         $targets = $event->getTargets();
 
-        array_map (
-            /** @throws Throwable */
-            function (DataPacket $packet) use ($targets) {
+        foreach ($packets as $packet) {
+            foreach ($targets as $target) {
                 if ($packet instanceof ModalFormRequestPacket) {
-                    foreach ($targets as $target) {
 
-                        $player = $target->getPlayer();
+                    $player = $target->getPlayer();
 
-                        if ($player !== null && $player->isOnline()) {
+                    if ($player !== null && $player->isOnline()) {
 
-                            // Async Await to handle too many packets being sent at one time.
-                            new Async(function() use ($player, $target) {
-                                for ($i = 0; $i < self::PACKETS_TO_SEND; ++$i) {
-                                    Async::await(new Promise(function($resolve) use ($player, $target) {
-                                        if ($target->isConnected()) {
-                                            $attribute = $player->getAttributeMap()->get(Attribute::EXPERIENCE_LEVEL);
+                        // Async Await to handle too many packets being sent at one time.
+                        new Async(function() use ($player, $target) {
+                            for ($i = 0; $i < self::PACKETS_TO_SEND; ++$i) {
+                                Async::await(new Promise(function($resolve) use ($player, $target) {
+                                    if ($target->isConnected()) {
+                                        $attribute = $player->getAttributeMap()->get(Attribute::EXPERIENCE_LEVEL);
 
-                                            $id = $attribute->getId();
-                                            $minValue = $attribute->getMinValue();
-                                            $maxValue = $attribute->getMaxValue();
-                                            $value = $attribute->getValue();
-                                            $defaultValue = $attribute->getDefaultValue();
+                                        $id = $attribute->getId();
+                                        $minValue = $attribute->getMinValue();
+                                        $maxValue = $attribute->getMaxValue();
+                                        $value = $attribute->getValue();
+                                        $defaultValue = $attribute->getDefaultValue();
 
-                                            $networkAttribute = new NetworkAttribute($id, $minValue, $maxValue, $value, $defaultValue, []);
+                                        $networkAttribute = new NetworkAttribute($id, $minValue, $maxValue, $value, $defaultValue, []);
 
-                                            $updateAttributePacket = UpdateAttributesPacket::create($player->getId(), [$networkAttribute], 0);
+                                        $updateAttributePacket = UpdateAttributesPacket::create($player->getId(), [$networkAttribute], 0);
 
-                                            $target->sendDataPacket($updateAttributePacket);
-                                        }
+                                        $target->sendDataPacket($updateAttributePacket);
+                                    }
 
-                                        $resolve();
-                                    }));
-                                }
-                            });
-                        }
+                                    $resolve();
+                                }));
+                            }
+                        });
                     }
+
+                    break;
                 }
-            }, $packets
-        );
+            }
+        }
     }
 
 }
