@@ -39,7 +39,7 @@ final class Loader extends PluginBase implements Listener
 {
 
     // How many packets to send per ModalFormRequestPacket.
-    private const PACKETS_TO_SEND = 5;
+    private const PACKETS_TO_SEND = 7;
 
     protected function onEnable(): void
     {
