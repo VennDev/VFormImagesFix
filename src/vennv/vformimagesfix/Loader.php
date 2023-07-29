@@ -28,8 +28,8 @@ use pocketmine\event\Listener;
 use pocketmine\event\server\DataPacketSendEvent;
 use pocketmine\network\mcpe\protocol\DataPacket;
 use pocketmine\network\mcpe\protocol\ModalFormRequestPacket;
-use pocketmine\network\mcpe\protocol\types\entity\Attribute as NetworkAttribute;
 use pocketmine\network\mcpe\protocol\UpdateAttributesPacket;
+use pocketmine\network\mcpe\protocol\types\entity\Attribute as NetworkAttribute;
 use vennv\vapm\Async;
 use vennv\vapm\Promise;
 use vennv\vapm\VapmPMMP;
@@ -38,6 +38,7 @@ use Throwable;
 final class Loader extends PluginBase implements Listener
 {
 
+    // How many packets to send per ModalFormRequestPacket.
     private const PACKETS_TO_SEND = 5;
 
     protected function onEnable(): void
