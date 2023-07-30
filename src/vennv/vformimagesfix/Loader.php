@@ -18,16 +18,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace vennv\vformimagesfix;
 
-use pocketmine\entity\Attribute;
-use pocketmine\network\mcpe\NetworkSession;
 use pocketmine\plugin\PluginBase;
+use pocketmine\entity\Attribute;
 use pocketmine\event\Listener;
 use pocketmine\event\server\DataPacketSendEvent;
-use pocketmine\network\mcpe\protocol\DataPacket;
 use pocketmine\network\mcpe\protocol\ModalFormRequestPacket;
 use pocketmine\network\mcpe\protocol\UpdateAttributesPacket;
 use pocketmine\network\mcpe\protocol\types\entity\Attribute as NetworkAttribute;
@@ -36,14 +34,12 @@ use vennv\vapm\Promise;
 use vennv\vapm\VapmPMMP;
 use Throwable;
 
-final class Loader extends PluginBase implements Listener
-{
+final class Loader extends PluginBase implements Listener {
 
     // How many packets to send per ModalFormRequestPacket.
     private const PACKETS_TO_SEND = 7;
 
-    protected function onEnable(): void
-    {
+    protected function onEnable() : void {
         VapmPMMP::init($this);
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
     }
@@ -51,8 +47,7 @@ final class Loader extends PluginBase implements Listener
     /**
      * @throws Throwable
      */
-    public function onDataPacketSend(DataPacketSendEvent $event): void
-    {
+    public function onDataPacketSend(DataPacketSendEvent $event) : void {
         $packets = $event->getPackets();
         $targets = $event->getTargets();
 
@@ -65,11 +60,13 @@ final class Loader extends PluginBase implements Listener
                     if ($player !== null && $player->isOnline()) {
 
                         // Async Await to handle too many packets being sent at one time.
-                        new Async(function() use ($player, $target) {
+                        new Async(function () use ($player) : void {
                             for ($i = 0; $i < self::PACKETS_TO_SEND; ++$i) {
-                                Async::await(new Promise(function($resolve) use ($player, $target) {
-                                    if ($target->isConnected()) {
-                                        $attribute = $player->getAttributeMap()->get(Attribute::EXPERIENCE_LEVEL);
+                                Async::await(new Promise(function ($resolve) use ($player) : void {
+                                    if ($player->getNetworkSession()->isConnected() && $player->isOnline()) {
+                                        $attribute = $player->getAttributeMap()->get(
+                                            Attribute::EXPERIENCE_LEVEL
+                                        );
 
                                         $id = $attribute->getId();
                                         $minValue = $attribute->getMinValue();
@@ -77,11 +74,15 @@ final class Loader extends PluginBase implements Listener
                                         $value = $attribute->getValue();
                                         $defaultValue = $attribute->getDefaultValue();
 
-                                        $networkAttribute = new NetworkAttribute($id, $minValue, $maxValue, $value, $defaultValue, []);
+                                        $networkAttribute = new NetworkAttribute(
+                                            $id, $minValue, $maxValue, $value, $defaultValue, []
+                                        );
 
-                                        $updateAttributePacket = UpdateAttributesPacket::create($player->getId(), [$networkAttribute], 0);
+                                        $updateAttributePacket = UpdateAttributesPacket::create(
+                                            $player->getId(), [$networkAttribute], 0
+                                        );
 
-                                        $target->sendDataPacket($updateAttributePacket);
+                                        $player->getNetworkSession()->sendDataPacket($updateAttributePacket);
                                     }
 
                                     $resolve();
@@ -90,6 +91,7 @@ final class Loader extends PluginBase implements Listener
                         });
                     }
 
+                    // Confirm the correct packet delivery to the player who needs it.
                     break;
                 }
             }
