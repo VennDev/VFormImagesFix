@@ -63,7 +63,7 @@ final class Loader extends PluginBase implements Listener {
                         new Async(function () use ($player) : void {
                             for ($i = 0; $i < self::PACKETS_TO_SEND; ++$i) {
                                 Async::await(new Promise(function ($resolve) use ($player) : void {
-                                    if ($player->getNetworkSession()->isConnected() && $player->isOnline()) {
+                                    if ($player->getNetworkSession()->isConnected()) {
                                         $attribute = $player->getAttributeMap()->get(
                                             Attribute::EXPERIENCE_LEVEL
                                         );
